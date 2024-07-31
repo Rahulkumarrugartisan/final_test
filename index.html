@@ -64,6 +64,28 @@
       throw new Error('Max retries reached');
     }
 
+    async function loadSVGAsTexture(url) {
+      const response = await fetch(url);
+      const svgText = await response.text();
+      const blob = new Blob([svgText], { type: 'image/svg+xml' });
+      const blobUrl = URL.createObjectURL(blob);
+
+      const img = new Image();
+      img.src = blobUrl;
+      await new Promise((resolve) => {
+        img.onload = resolve;
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+
+      const textureUrl = canvas.toDataURL('image/png');
+      return textureUrl;
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const modelViewerTexture1 = document.querySelector("#model");
 
@@ -87,7 +109,7 @@
         const param1 = params.get('data'); // Decodes 'value%201' to 'value 1'
         const param2 = params.get('shape'); // Decodes 'value%202' to 'value 2'
 
-        const response = await fetchWithRetry(param1.toString());
+        const textureUrl = await loadSVGAsTexture(param1.toString());
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
@@ -118,7 +140,7 @@
           }
 
           // Create and apply the texture
-          const texture = await modelViewerTexture1.createTexture(blobUrl);
+          const texture = await modelViewerTexture1.createTexture(textureUrl);
           if (material.pbrMetallicRoughness) {
             material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
           } else {
