@@ -97,22 +97,17 @@
         const url = 'https://example.com/page#data=value%201&shape=value%202';
 
         const currentUrl = window.location.href;
-        // Create a URL object
         const urlObject = new URL(currentUrl);
-
-        // Get the fragment
-        const fragment = urlObject.hash.substring(1); // Remove the '#'
-
-        // Decode and extract parameters
+        const fragment = urlObject.hash.substring(1);
         const params = new URLSearchParams(fragment);
+        const param1 = params.get('data');
+        const svgTextureUrl = param1.toString();
 
-        const param1 = params.get('data'); // Decodes 'value%201' to 'value 1'
+        //const param1 = params.get('data'); // Decodes 'value%201' to 'value 1'
         const param2 = params.get('shape'); // Decodes 'value%202' to 'value 2'
 
-        const textureUrl = await loadSVGAsTexture(param1.toString());
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
+        const textureUrl = await loadSVGAsTexture(svgTextureUrl);
+        
         const blob = await response.blob();
         const blobUrl = URL.createObjectURL(blob);
 
