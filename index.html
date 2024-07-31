@@ -41,6 +41,29 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
   <script type="module">
+
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function fetchWithRetry(url, retries = 3, delayTime = 1000) {
+      for (let i = 0; i < retries; i++) {
+        try {
+          const response = await fetch(url, { mode: 'cors' });
+          if (response.status === 429) {
+            const retryAfter = response.headers.get('Retry-After') || delayTime;
+            await delay(retryAfter * 1000);
+            continue;
+          }
+          return response;
+        } catch (error) {
+          if (i === retries - 1) throw error;
+          await delay(delayTime);
+        }
+      }
+      throw new Error('Max retries reached');
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const modelViewerTexture1 = document.querySelector("#model");
 
@@ -64,7 +87,7 @@
         const param1 = params.get('data'); // Decodes 'value%201' to 'value 1'
         const param2 = params.get('shape'); // Decodes 'value%202' to 'value 2'
 
-        const response = await fetch(param1.toString(), { mode: 'cors' });
+        const response = await fetchWithRetry(newTextureUrl);
         if (!response.ok) {
           throw new Error('Network response was not ok');
         }
@@ -95,7 +118,7 @@
           }
 
           // Create and apply the texture
-          const texture = await modelViewerTexture1.createTexture(blobUrl );
+          const texture = await modelViewerTexture1.createTexture(blobUrl);
           if (material.pbrMetallicRoughness) {
             material.pbrMetallicRoughness.baseColorTexture.setTexture(texture);
           } else {
